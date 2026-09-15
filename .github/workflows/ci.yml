@@ -1,11 +1,11 @@
 name: CI
 
 on:
-  push:
-    branches: [master]
-  pull_request:
-    branches: [master]
+  workflow_dispatch:
 
+# Scope: this repository ships the DeepSeek Harness bundle. Claude Code and
+# Codex manifest / marketplace-bundle validation belongs to those
+# distributions, so only the dsh pipeline is wired up here.
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -33,25 +33,29 @@ jobs:
       - run: uv sync --all-extras
       - run: uv run mypy src/
 
-  # Plugin contract smoke tests: Claude and Codex manifests must stay in sync
-  # with the reproducible marketplace bundle.
-  plugin-contract:
+  # DeepSeek Harness bundle contract: the npm package, its cordis patch layer
+  # and the self-locating path service must stay consistent with the shipped
+  # skills, and the packed tarball must carry the layer.
+  dsh-contract:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
       - uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
       - run: uv sync --all-extras
-      - name: Validate plugin manifests and bundle builder
-        run: uv run pytest tests/test_plugin_manifest.py tests/test_plugin_bundle.py -q
-      - name: Build and check a clean plugin bundle
-        run: |
-          uv run python scripts/build_plugin_bundle.py --output "$RUNNER_TEMP/autocode-bundle"
-          uv run python scripts/build_plugin_bundle.py --check --output "$RUNNER_TEMP/autocode-bundle"
+      - name: Syntax-check the dsh bundle entry
+        run: node --check dsh/paths.mjs
+      - name: Validate the dsh bundle contract
+        run: uv run pytest tests/test_dsh_plugin.py -q
+      - name: Verify the npm tarball contents
+        run: npm pack --dry-run
 
   test-unit:
     runs-on: ubuntu-latest
@@ -68,7 +72,12 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --all-extras
-      - run: uv run pytest tests/ -v -m "not integration" --cov --cov-report=xml
+      # The Claude/Codex manifest and marketplace-bundle contracts ship with
+      # those hosts, not with this pipeline.
+      - run: |
+          uv run pytest tests/ -v -m "not integration" --cov --cov-report=xml \
+            --ignore=tests/test_plugin_manifest.py \
+            --ignore=tests/test_plugin_bundle.py
       - uses: codecov/codecov-action@v4
         with:
           files: coverage.xml

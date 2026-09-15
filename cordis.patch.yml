@@ -1,0 +1,47 @@
+# AutoCode bundle layer for DeepSeek Harness (dsh).
+#
+# `package.json` points `dsh.bundle.patch` at this file, so a profile that lists
+# `dsh-xcpc-autocode` applies these rows on top of `@deepseek-ai/dsh-base`.
+#
+# Rows reference installed packages by name (Cordis resolves them through Node
+# module resolution from the profile directory), never by source path, because a
+# bundle is installed into `$DSH_HOME/profiles/<name>/node_modules`.
+#
+# A bundle cannot know that install location at authoring time, so every
+# absolute path is read back from `ctx.autocodePaths` — the service published by
+# `dsh/paths.mjs`, which derives it from `import.meta.url`. The `inject` entries
+# make the rows below wait for that service.
+- insert:
+    # Publishes `ctx.autocodePaths`. Declared first so the rows below can inject it.
+    - id: autocode-paths
+      name: dsh-xcpc-autocode
+
+    # Exposes the AutoCode MCP server as `mcp__autocode__<tool>`, matching the
+    # `mcp__autocode__.*` namespace the Claude plugin gates on.
+    #
+    # No host-side hook row is registered: `src/autocode_mcp/workflow/`
+    # enforces the workflow inside the MCP server itself, exactly like the Codex
+    # host, which does not depend on hooks either.
+    - id: autocode-mcp
+      name: '@deepseek-ai/dsh-mcp-client'
+      inject: [autocodePaths]
+      config:
+        serverName: autocode
+        transport: stdio
+        command: !!js ctx.autocodePaths.mcpCommand
+        args: !!js ctx.autocodePaths.mcpArgs
+        cwd: !!js ctx.autocodePaths.project
+        # Compiling solutions, stress testing and final-data verification all
+        # exceed the 60s `toolCallTimeoutMs` default by a wide margin.
+        toolCallTimeoutMs: 1800000
+        failOnStartupError: false
+
+    # Registers the skills that ship inside this package (`skills/*/SKILL.md`).
+    # `includeDefaultRoots` keeps the project and user skill roots working.
+    - id: autocode-skills
+      name: '@deepseek-ai/dsh-skill-filesystem'
+      inject: [autocodePaths]
+      config:
+        providerName: autocode
+        includeDefaultRoots: true
+        customSkillDirs: !!js ctx.autocodePaths.skillDirs

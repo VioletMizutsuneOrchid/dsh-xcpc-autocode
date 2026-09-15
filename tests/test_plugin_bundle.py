@@ -22,7 +22,7 @@ def test_build_plugin_bundle_has_codex_manifest_and_provenance(tmp_path):
     assert module.check(output) == []
     assert (output / ".codex-plugin" / "plugin.json").is_file()
     provenance = json.loads((output / ".autocode-release.json").read_text(encoding="utf-8"))
-    assert provenance["source_repository"] == "https://github.com/SZTU-ACM/AutoCode"
+    assert provenance["source_repository"] == "https://github.com/VioletMizutsuneOrchid/dsh-xcpc-autocode"
     assert provenance["source_fingerprint"]
 
 

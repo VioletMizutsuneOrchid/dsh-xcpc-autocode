@@ -32,7 +32,7 @@ def test_claude_plugin_manifest_has_interface_metadata():
     manifest = json.loads(Path(".claude-plugin/plugin.json").read_text(encoding="utf-8"))
 
     assert manifest["description"]
-    assert manifest["homepage"] == "https://github.com/SZTU-ACM/AutoCode"
+    assert manifest["homepage"] == "https://github.com/VioletMizutsuneOrchid/dsh-xcpc-autocode"
     assert "autocode" in manifest["keywords"]
 
 
@@ -48,12 +48,14 @@ def test_codex_plugin_manifest_declares_shared_assets():
 
 
 def test_host_manifests_and_package_share_one_version_source():
-    """Claude, Codex, and the importable package must not drift in version."""
+    """Claude, Codex, the npm bundle, and the importable package must not drift."""
     claude = json.loads(Path(".claude-plugin/plugin.json").read_text(encoding="utf-8"))
     codex = json.loads(Path(".codex-plugin/plugin.json").read_text(encoding="utf-8"))
+    npm = json.loads(Path("package.json").read_text(encoding="utf-8"))
     from autocode_mcp import __version__
 
-    assert claude["version"] == codex["version"] == __version__ == project_version()
+    assert claude["version"] == codex["version"] == npm["version"]
+    assert npm["version"] == __version__ == project_version()
 
 
 def test_mcp_dependency_stays_on_supported_major():

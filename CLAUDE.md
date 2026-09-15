@@ -4,7 +4,7 @@
 
 ## 项目定位
 
-AutoCode 是一个面向 Claude Code 与 Codex 的 plugin，面向竞赛编程出题工作流。仓库内部同时包含 `autocode-mcp` MCP server；两种宿主共享 MCP 工具、Skills 与 server 级门禁，Claude 额外使用 Agent 和 hooks。
+AutoCode 是一个面向 Claude Code、Codex 与 DeepSeek Harness（dsh）的 plugin，面向竞赛编程出题工作流。仓库内部同时包含 `autocode-mcp` MCP server；三种宿主共享 MCP 工具、Skills 与 server 级门禁，Claude 额外使用 Agent 和 hooks，Codex 与 dsh 都不依赖 hooks。
 
 它要解决的核心问题不是“让 AI 直接写完一道题”，而是把 AI 生成的题面、解法、validator、generator、checker/interactor、对拍、测试数据和 Polygon 打包放进可验证、可审计、会阻止跳步的流程。
 
@@ -39,6 +39,13 @@ uv run pytest tests/test_plugin_manifest.py tests/test_plugin_bundle.py -q
 uv run python scripts/build_plugin_bundle.py --output /tmp/autocode-bundle
 uv run python scripts/build_plugin_bundle.py --check --output /tmp/autocode-bundle
 
+# 校验 dsh bundle 契约（package.json / cordis.patch.yml / dsh/paths.mjs）
+uv run pytest tests/test_dsh_plugin.py -q
+node --check dsh/paths.mjs
+
+# 检查版本单一真源是否漂移（pyproject -> manifest / package.json / __version__）
+uv run python scripts/sync_plugin_version.py --check
+
 # 运行 MCP Server（本地开发/测试）
 uv run autocode-mcp
 
@@ -59,10 +66,13 @@ uv run twine check dist/*
 AutoCode/
 ├── .claude-plugin/        # Claude plugin manifest
 ├── .codex-plugin/         # Codex plugin manifest
+├── package.json           # npm 包清单 + dsh.bundle（发布为 dsh-xcpc-autocode）
+├── cordis.patch.yml       # dsh bundle 配置层（MCP server 行 + skills 行）
+├── dsh/                   # dsh bundle 入口（ctx.autocodePaths 路径服务）
 ├── agents/                # Claude plugin agent definitions
 ├── hooks/                 # Claude hook config
 ├── scripts/               # Hook/runtime helper scripts
-├── skills/                # Claude plugin skills
+├── skills/                # Claude plugin skills（同时作为 dsh 技能根）
 ├── examples/              # manifest/examples smoke samples
 ├── src/autocode_mcp/      # MCP server 源代码
 │   ├── cli/               # autocode-verify 等 CLI
@@ -74,7 +84,7 @@ AutoCode/
 ├── .mcp.json              # 本地 MCP 接入配置（开发/兼容用）
 ├── settings.json          # Claude plugin 默认 agent
 ├── scripts/build_plugin_bundle.py # Codex/marketplace bundle builder
-└── pyproject.toml         # Python package / scripts
+└── pyproject.toml         # Python package / scripts（版本单一真源）
 ```
 
 ## 工具列表
@@ -138,7 +148,7 @@ AutoCode 当前暴露 22 个 MCP 工具：
 
 ## 强制工作流
 
-该顺序由 `src/autocode_mcp/workflow/enforcement.py` 和 MCP server 实际强制执行；Claude 的 `hooks/hooks.json` / `scripts/workflow_guard.py` 只提供提前提示与兼容适配，Codex 不依赖 hooks。
+该顺序由 `src/autocode_mcp/workflow/enforcement.py` 和 MCP server 实际强制执行；Claude 的 `hooks/hooks.json` / `scripts/workflow_guard.py` 只提供提前提示与兼容适配，Codex 与 dsh 都不依赖 hooks。
 
 1. `problem_create`
 2. `solution_build(solution_type="sol")`
@@ -216,10 +226,12 @@ uv run autocode-audit <problem_dir> --mode full --report audit_report.json
 
 ## 关键约束
 
-- 包管理强制使用 `uv`；不要引入 pip/poetry/conda 流程。
-- 对外文档同时描述 Claude Code 与 Codex plugin；MCP server 是两者共享的实现与开发入口。
-- 默认主路径是远程 plugin 安装；本地模式只用于开发、测试、验证。
-- `hooks/` 只放 hook 配置，hook 逻辑脚本放在 `scripts/`。
+- 包管理强制使用 `uv`；不要引入 pip/poetry/conda 流程。JS 侧只允许官方注入的 `@deepseek-ai/*` 模块，不要在 `package.json` 中声明前端/运行时依赖。
+- 对外文档同时描述 Claude Code、Codex 与 DeepSeek Harness plugin；MCP server 是三者共享的实现与开发入口。
+- 默认主路径是远程 plugin 安装（Claude/Codex marketplace 与 npm）；本地模式只用于开发、测试、验证。
+- `hooks/` 只放 hook 配置，hook 逻辑脚本放在 `scripts/`。dsh 侧不注册宿主 hook，门禁唯一真值仍在 MCP server。
+- `cordis.patch.yml` 只允许插入 `autocode-paths` / `autocode-mcp` / `autocode-skills` 三行，且不得硬编码安装路径：所有绝对路径必须经 `dsh/paths.mjs` 发布的 `ctx.autocodePaths` 服务用 `!!js` 注入。
+- 版本单一真源仍是 `pyproject.toml`；`.claude-plugin/plugin.json`、`.codex-plugin/plugin.json`、`package.json` 与 `__version__` 由 `scripts/sync_plugin_version.py` 派生，发布前用 `--check` 校验。
 - 模板资源统一放在 `src/autocode_mcp/templates/`。
 - C++ 标准使用 C++20（需要 GCC 10+）。
 - 本项目会编译并执行 AI 生成代码，只能在本地可信环境使用。

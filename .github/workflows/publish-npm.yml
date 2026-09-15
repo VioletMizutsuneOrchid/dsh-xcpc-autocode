@@ -1,0 +1,99 @@
+name: Publish npm plugin
+
+# Publishes the DeepSeek Harness bundle declared by `dsh.bundle` in
+# `package.json` (published as `dsh-xcpc-autocode` from
+# https://github.com/VioletMizutsuneOrchid/dsh-xcpc-autocode).
+#
+# `pyproject.toml` stays the single version source: the release tag and the npm
+# package are verified against it before anything is uploaded, and the packed
+# tarball is inspected so the bundle layer is really in it (`dsh plugin add`
+# mounts nothing without `cordis.patch.yml`).
+#
+# Required repository secret:
+#   NPM_TOKEN - npm automation token with publish rights for `dsh-xcpc-autocode`.
+#   Provenance also needs a public repository (the `id-token: write` below).
+#
+# Manual runs only verify the tarball unless `publish` is checked.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Also upload to the npm registry
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required for npm provenance
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Verify the version single source is in sync
+        run: uv run python scripts/sync_plugin_version.py --check
+
+      - name: Validate the dsh bundle contract
+        run: |
+          uv run pytest tests/test_dsh_plugin.py -q
+          node --check dsh/paths.mjs
+
+      - name: Check the release tag matches the packaged version
+        if: github.event_name == 'release'
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import pathlib
+          import sys
+
+          package = json.loads(pathlib.Path("package.json").read_text(encoding="utf-8"))
+          version = package["version"]
+          tag = os.environ["RELEASE_TAG"].removeprefix("v")
+          if tag != version:
+              sys.exit(f"release tag {tag!r} does not match package.json version {version!r}")
+          print(f"Publishing {package['name']}@{version}")
+          PY
+
+      - name: Pack and inspect the tarball
+        run: |
+          npm pack --pack-destination "$RUNNER_TEMP"
+          tar -tzf "$RUNNER_TEMP"/dsh-xcpc-autocode-*.tgz | sort
+          for entry in \
+            package/package.json \
+            package/cordis.patch.yml \
+            package/dsh/paths.mjs \
+            package/pyproject.toml \
+            package/uv.lock; do
+            tar -tzf "$RUNNER_TEMP"/dsh-xcpc-autocode-*.tgz | grep -qx "$entry" \
+              || { echo "::error::$entry is missing from the tarball"; exit 1; }
+          done
+
+      - name: Publish to npm
+        if: github.event_name == 'release' || inputs.publish
+        run: npm publish --provenance --tag latest
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

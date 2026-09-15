@@ -1,9 +1,13 @@
-# AutoCode
+# AutoCode for deepseek harness
+
+本项目是针对https://github.com/SZTU-ACM/AutoCode的deepseek harness适配仓库，如果您使用codex和claude code请直接使用使用上游仓库的版本，本版本不保证原版的适用性。
+
+---
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP](https://img.shields.io/badge/Protocol-MCP-blue.svg)](https://modelcontextprotocol.io/)
 
-**AutoCode 是面向竞赛编程出题人的 AI 出题工作台，支持 Claude Code 和 Codex。**
+**AutoCode 是面向竞赛编程出题人的 AI 出题工作台，支持 Claude Code、Codex 和 DeepSeek Harness。**
 
 从一个想法开始，AutoCode 会协助你完成题面、解法、测试数据、验证和题包整理，把创作过程变成一条清晰、可靠、可复用的工作流。
 
@@ -43,7 +47,7 @@ AutoCode 适合：
 - 想用 AI 加速出题，但担心题面、样例、数据和复杂度不可靠的出题人。
 - 需要把题目从 idea 推到可打包 Polygon 结构的竞赛组织者。
 - 希望 AI 遵循完整验证流程的团队。
-- 想在 Claude Code 或 Codex 中获得完整、可验证出题工作流的用户。
+- 想在 Claude Code、Codex 或 DeepSeek Harness 中获得完整、可验证出题工作流的用户。
 
 ## 快速开始
 
@@ -52,28 +56,27 @@ AutoCode 适合：
 - Python 3.10+
 - [`uv`](https://docs.astral.sh/uv/)
 - 支持 C++20 的 `g++`，推荐 GCC 10+
-- Claude Code 或 Codex CLI（至少安装一个）
+- Claude Code、Codex CLI 或 DeepSeek Harness（至少安装一个；DeepSeek Harness 还需要 Node.js 20+）
 
 常用的竞赛编程工具库已经随 AutoCode 一起提供。
 
-### 安装 Claude Code 插件
 
-推荐通过 Claude Code marketplace 安装：
+### 安装 DeepSeek Harness 插件
+
+AutoCode 同时以 npm 包（`dsh-xcpc-autocode`）形式发布为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（dsh）插件，通过 profile 安装：
 
 ```bash
-claude plugin marketplace add https://github.com/SummerOneTwo/autocode-marketplace.git
-claude plugin install autocode@autocode-marketplace
+dsh plugin --profile web add dsh-xcpc-autocode
+dsh --profile web --dump-config   # 确认 AutoCode 的配置层已生效
+dsh --profile web
 ```
 
-安装完成后即可获得完整的出题工作流，以及题面、解法、测试数据和题包的自动质量检查。
+安装后，AutoCode MCP server 会以 `mcp__autocode__*` 暴露全部工具，包内的 `skills/` 会被注册为 dsh 技能。工作流门禁仍由 MCP server 自身执行，dsh 侧不依赖宿主 hooks。
 
-### 安装 Codex 插件
-
-在 Codex 中安装 AutoCode：
+从本地源码安装（开发调试）：
 
 ```bash
-codex plugin marketplace add https://github.com/SummerOneTwo/autocode-marketplace.git
-codex plugin add autocode@autocode-marketplace
+dsh plugin --profile web add /path/to/AutoCode
 ```
 
 ### 开始使用
@@ -178,6 +181,6 @@ MIT License - 详见 [LICENSE](LICENSE)。
 
 ## 链接
 
-- [文档](https://github.com/SZTU-ACM/AutoCode#readme)
-- [GitHub](https://github.com/SZTU-ACM/AutoCode)
-- [Issue Tracker](https://github.com/SZTU-ACM/AutoCode/issues)
+- [文档](https://github.com/VioletMizutsuneOrchid/dsh-xcpc-autocode#readme)
+- [GitHub](https://github.com/VioletMizutsuneOrchid/dsh-xcpc-autocode)
+- [Issue Tracker](https://github.com/VioletMizutsuneOrchid/dsh-xcpc-autocode/issues)

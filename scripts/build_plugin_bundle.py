@@ -25,9 +25,12 @@ INCLUDE = (
     ".codex-plugin",
     ".mcp.json",
     "settings.json",
+    "package.json",
+    "cordis.patch.yml",
     "hooks",
     "agents",
     "skills",
+    "dsh",
     "scripts",
     "src",
     "pyproject.toml",
@@ -112,7 +115,7 @@ def build(output: Path) -> None:
     provenance = {
         "name": "autocode",
         "version": version(),
-        "source_repository": "https://github.com/SZTU-ACM/AutoCode",
+        "source_repository": "https://github.com/VioletMizutsuneOrchid/dsh-xcpc-autocode",
         "source_fingerprint": source_fingerprint(),
     }
     (output / ".autocode-release.json").write_text(

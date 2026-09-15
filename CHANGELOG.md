@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Features
+
+- **DeepSeek Harness（dsh）宿主适配**
+  - 新增 npm 包清单 `package.json`：以 `dsh.bundle.patch` 声明 dsh 组合包（发布名 `dsh-xcpc-autocode`），`files` 覆盖 skills、Python MCP server 与 uv 项目文件。
+  - 新增 `cordis.patch.yml`：插入 `@deepseek-ai/dsh-mcp-client`（`serverName: autocode`，工具名保持 `mcp__autocode__*`）与 `@deepseek-ai/dsh-skill-filesystem`（`providerName: autocode`）两行。
+  - 新增 `dsh/paths.mjs`：以 Cordis `Service` 发布 `ctx.autocodePaths`，由 `import.meta.url` 自定位包根，避免在 patch 中硬编码安装路径；配置层通过 `!!js ctx.autocodePaths.*` 取用。
+  - dsh 侧不注册宿主 hook：工作流门禁的唯一真值仍是 MCP server（与 Codex 一致）。MCP 工具调用超时提升到 30 分钟以适应编译与对拍。
+
+### Distribution
+
+- **仓库与包名迁移**：npm 包名改为 `dsh-xcpc-autocode`，仓库地址改为 `https://github.com/VioletMizutsuneOrchid/dsh-xcpc-autocode`；`package.json`、`cordis.patch.yml`、Claude/Codex manifest、bundle provenance、README/TROUBLESHOOTING 与测试断言同步更新。
+- 新增 `.github/workflows/publish-npm.yml`：在 GitHub Release 发布时校验版本单一真源、dsh bundle 契约与 tarball 内容，再以 `--provenance` 发布 npm 包；`workflow_dispatch` 可只做打包校验。
+
+### Improvements
+
+- `scripts/sync_plugin_version.py` 增加 `package.json` 目标与 `--check` 模式；版本单一真源扩展为 pyproject → Claude/Codex manifest、npm 包与 `__version__` 四处。
+- `scripts/build_plugin_bundle.py` 的 bundle 清单纳入 `package.json`、`cordis.patch.yml` 与 `dsh/`。
+- CI 新增 `dsh-contract` job：校验 dsh bundle 契约、入口 JS 语法与 npm tarball 内容。
+- 新增 `tests/test_dsh_plugin.py` 守护 dsh 契约；`tests/test_plugin_manifest.py` 的版本一致性测试纳入 npm 包。
+
+### Workflows
+
+- **流水线收敛到 DeepSeek Harness**：删除 CI 中的 `plugin-contract` job（Claude/Codex manifest 与 marketplace bundle 校验及其构建步骤），`dsh-contract` 不再运行这两个宿主的契约测试，`test-unit` 通过 `--ignore` 排除 `tests/test_plugin_manifest.py` 与 `tests/test_plugin_bundle.py`；`publish-npm.yml` 只校验 dsh 契约。相关文件仍保留在仓库中，不再纳入流水线。
+
 ## [3.0.0] - 2026-08-02
 
 ### Breaking Changes

@@ -1,0 +1,64 @@
+{
+  "name": "dsh-xcpc-autocode",
+  "version": "3.0.0",
+  "description": "DeepSeek Harness plugin for verified competitive-programming problem-setting workflows.",
+  "type": "module",
+  "main": "./dsh/paths.mjs",
+  "exports": {
+    ".": "./dsh/paths.mjs",
+    "./paths": "./dsh/paths.mjs",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "files": [
+    "cordis.patch.yml",
+    "dsh/",
+    "skills/",
+    "agents/",
+    "hooks/",
+    "scripts/",
+    "src/",
+    "settings.json",
+    ".mcp.json",
+    ".claude-plugin/",
+    ".codex-plugin/",
+    "pyproject.toml",
+    "uv.lock",
+    "README.md",
+    "CHANGELOG.md",
+    "TROUBLESHOOTING.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "prepack": "node --check dsh/paths.mjs"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "autocode",
+    "competitive-programming",
+    "mcp",
+    "plugin"
+  ],
+  "homepage": "https://github.com/VioletMizutsuneOrchid/dsh-xcpc-autocode",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VioletMizutsuneOrchid/dsh-xcpc-autocode.git"
+  },
+  "bugs": {
+    "url": "https://github.com/VioletMizutsuneOrchid/dsh-xcpc-autocode/issues"
+  },
+  "author": {
+    "name": "VioletMizutsuneOrchid",
+    "url": "https://github.com/VioletMizutsuneOrchid"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  }
+}
