@@ -2,17 +2,29 @@
 
 import json
 import os
+from pathlib import Path
 
 import pytest
+
+try:  # Python 3.11+
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10 (project floor) has no tomllib
+    import tomli as tomllib  # type: ignore[no-redef]
 
 # ============== 基础功能测试（原 test_server.py） ==============
 
 
+def project_version() -> str:
+    """`pyproject.toml` is the single version source for every manifest."""
+    data = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+    return str(data["project"]["version"])
+
+
 def test_import():
-    """测试模块导入。"""
+    """测试模块导入，且版本号跟随 `pyproject.toml`，避免版本升级时再次硬编码漂移。"""
     from autocode_mcp import __version__
 
-    assert __version__ == "3.0.0"
+    assert __version__ == project_version()
 
 
 def test_tool_result():

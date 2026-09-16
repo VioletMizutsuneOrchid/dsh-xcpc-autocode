@@ -32,7 +32,9 @@ def test_claude_plugin_manifest_has_interface_metadata():
     manifest = json.loads(Path(".claude-plugin/plugin.json").read_text(encoding="utf-8"))
 
     assert manifest["description"]
-    assert manifest["homepage"] == "https://github.com/VioletMizutsuneOrchid/dsh-xcpc-autocode"
+    # The Claude/Codex manifests intentionally keep pointing at the upstream
+    # repository: this repo only ships the DeepSeek Harness adaptation.
+    assert manifest["homepage"] == "https://github.com/SZTU-ACM/AutoCode"
     assert "autocode" in manifest["keywords"]
 
 

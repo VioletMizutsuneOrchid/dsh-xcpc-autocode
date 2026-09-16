@@ -1,6 +1,6 @@
 {
   "name": "dsh-xcpc-autocode",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "DeepSeek Harness plugin for verified competitive-programming problem-setting workflows.",
   "type": "module",
   "main": "./dsh/paths.mjs",
