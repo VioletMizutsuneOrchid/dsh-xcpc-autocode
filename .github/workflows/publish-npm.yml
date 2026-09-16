@@ -94,6 +94,6 @@ jobs:
 
       - name: Publish to npm
         if: github.event_name == 'release' || inputs.publish
-        run: npm publish --provenance --tag latest
+        run: npm publish --provenance --tag latest --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
